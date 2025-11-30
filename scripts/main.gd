@@ -6,7 +6,7 @@ extends Control
 @onready var money_label: Label = $MainMargin/MainLayout/HeaderPanel/MarginContainer/HBoxContainer/ResourceVBox/MoneyLabel
 @onready var fame_label: Label = $MainMargin/MainLayout/HeaderPanel/MarginContainer/HBoxContainer/ResourceVBox/FameLabel
 @onready var title_label: Label = $MainMargin/MainLayout/HeaderPanel/MarginContainer/HBoxContainer/TitleLabel
-@onready var content_container: Control = $MainMargin/MainLayout/ContentContainer
+@onready var content_container: CenterContainer = $MainMargin/MainLayout/ContentContainer
 @onready var upgrade_button: Button = $MainMargin/MainLayout/ButtonBar/UpgradeButton
 @onready var recruit_button: Button = $MainMargin/MainLayout/ButtonBar/RecruitButton
 
@@ -84,17 +84,35 @@ func _initialize_rapid_response() -> void:
 	# Wait a frame for manager to be ready
 	await get_tree().process_frame
 	
-	# Create UI
+	# Load rapid response UI scene
+	var rapid_ui_scene = load("res://scenes/ui/rapid_response_ui.tscn")
+	if rapid_ui_scene:
+		rapid_ui = rapid_ui_scene.instantiate()
+		rapid_ui.name = "RapidResponseUI"
+		content_container.add_child(rapid_ui)
+		
+		# Wait for UI to be in tree
+		await get_tree().process_frame
+		
+		# Setup UI
+		if rapid_ui.has_method("setup"):
+			rapid_ui.setup(rapid_manager, game_manager)
+	else:
+		push_error("Failed to load rapid_response_ui.tscn")
+		# Fallback to code-based UI
+		_create_fallback_ui()
+
+func _create_fallback_ui() -> void:
+	"""Fallback if scene file is missing"""
 	rapid_ui = Control.new()
 	rapid_ui.name = "RapidResponseUI"
 	rapid_ui.set_script(preload("res://scripts/rapid_response_ui.gd"))
 	content_container.add_child(rapid_ui)
 	
-	# Wait for UI to be in tree
 	await get_tree().process_frame
 	
-	# Setup UI
-	rapid_ui.setup(rapid_manager, game_manager)
+	if rapid_ui.has_method("setup"):
+		rapid_ui.setup(rapid_manager, game_manager)
 
 func _setup_upgrade_panel() -> void:
 	call_deferred("_load_upgrade_panel")
@@ -131,6 +149,7 @@ func _on_hero_updated(_hero: Hero) -> void:
 	pass
 
 func _input(event: InputEvent) -> void:
+	# Debug hotkeys
 	if event.is_action_pressed("ui_cancel"):
 		if Input.is_key_pressed(KEY_F9):
 			_debug_reset_heroes()
@@ -167,9 +186,9 @@ func _debug_delete_save() -> void:
 	get_tree().reload_current_scene()
 
 func _show_upgrade_panel() -> void:
-	if upgrade_panel:
+	if upgrade_panel and upgrade_panel.has_method("show_panel"):
 		upgrade_panel.show_panel(game_manager)
 
 func _show_recruitment_panel() -> void:
-	if recruitment_panel:
+	if recruitment_panel and recruitment_panel.has_method("show_panel"):
 		recruitment_panel.show_panel()

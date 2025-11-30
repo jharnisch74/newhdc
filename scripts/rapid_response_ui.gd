@@ -9,12 +9,14 @@ var game_manager: Node
 var zone_selector: ZoneSelector
 var mission_card: MissionCard
 
-# UI Nodes
-var accept_button: Button
-var decline_button: Button
-var active_missions_panel: VBoxContainer
-var streak_label: Label
-var stats_panel: HBoxContainer
+# UI Node References from scene
+@onready var streak_label: Label = $MainVBox/TopStats/StreakLabel
+@onready var heroes_label: Label = $MainVBox/TopStats/HeroesLabel
+@onready var zone_selector_container: Control = $MainVBox/ZoneSelectorContainer
+@onready var mission_card_container: CenterContainer = $MainVBox/MissionCardContainer
+@onready var decline_button: Button = $MainVBox/ButtonRow/DeclineButton
+@onready var accept_button: Button = $MainVBox/ButtonRow/AcceptButton
+@onready var active_missions_panel: VBoxContainer = $MainVBox/ActiveMissionsSection/ActiveMissionsPanel
 
 # Hero selection overlay
 var hero_selection_overlay: ColorRect
@@ -23,8 +25,12 @@ var hero_buttons_container: VBoxContainer
 var selected_hero: Hero = null
 
 func _ready() -> void:
-	_create_ui()
+	_setup_components()
 	_create_hero_selection_overlay()
+	
+	# Connect button signals
+	decline_button.pressed.connect(_on_decline_pressed)
+	accept_button.pressed.connect(_show_hero_selection)
 
 func setup(rm: RapidResponseManager, gm: Node) -> void:
 	rapid_manager = rm
@@ -42,129 +48,17 @@ func setup(rm: RapidResponseManager, gm: Node) -> void:
 	
 	_update_mission_card()
 
-func _create_ui() -> void:
-	set_anchors_preset(PRESET_FULL_RECT)
-	
-	var bg := ColorRect.new()
-	bg.color = Color("#0f1624")
-	bg.set_anchors_preset(PRESET_FULL_RECT)
-	add_child(bg)
-	
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 20)
-	margin.add_theme_constant_override("margin_right", 20)
-	margin.add_theme_constant_override("margin_top", 20)
-	margin.add_theme_constant_override("margin_bottom", 20)
-	margin.set_anchors_preset(PRESET_FULL_RECT)
-	add_child(margin)
-	
-	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 20)
-	margin.add_child(vbox)
-	
-	# Top stats bar
-	_create_top_bar(vbox)
-	
-	# Zone selector component
+func _setup_components() -> void:
+	# Create zone selector component
 	zone_selector = ZoneSelector.new()
-	vbox.add_child(zone_selector)
+	zone_selector_container.add_child(zone_selector)
 	
-	# Mission card component (center, large)
-	var card_container := CenterContainer.new()
-	card_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	vbox.add_child(card_container)
-	
+	# Create mission card component
 	mission_card = MissionCard.new()
 	mission_card.swiped_left.connect(_animate_decline)
 	mission_card.swiped_right.connect(_show_hero_selection)
 	mission_card.card_tapped.connect(_show_hero_selection)
-	card_container.add_child(mission_card)
-	
-	# Accept/Decline buttons
-	_create_action_buttons(vbox)
-	
-	# Active missions (bottom)
-	_create_active_missions(vbox)
-
-func _create_top_bar(parent: VBoxContainer) -> void:
-	stats_panel = HBoxContainer.new()
-	stats_panel.add_theme_constant_override("separation", 20)
-	parent.add_child(stats_panel)
-	
-	# Streak
-	streak_label = Label.new()
-	streak_label.text = "🔥 Streak: 0"
-	streak_label.add_theme_font_size_override("font_size", 24)
-	streak_label.add_theme_color_override("font_color", Color("#ff8c42"))
-	stats_panel.add_child(streak_label)
-	
-	# Spacer
-	var spacer := Control.new()
-	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	stats_panel.add_child(spacer)
-	
-	# Available heroes
-	var heroes_label := Label.new()
-	heroes_label.name = "HeroesLabel"
-	heroes_label.text = "👥 3/3"
-	heroes_label.add_theme_font_size_override("font_size", 20)
-	heroes_label.add_theme_color_override("font_color", Color("#4ecca3"))
-	stats_panel.add_child(heroes_label)
-
-func _create_action_buttons(parent: VBoxContainer) -> void:
-	var button_row := HBoxContainer.new()
-	button_row.add_theme_constant_override("separation", 30)
-	button_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	parent.add_child(button_row)
-	
-	# Decline button (red X)
-	decline_button = Button.new()
-	decline_button.text = "❌\nDECLINE"
-	decline_button.custom_minimum_size = Vector2(120, 120)
-	decline_button.add_theme_font_size_override("font_size", 20)
-	
-	var decline_style := StyleBoxFlat.new()
-	decline_style.bg_color = Color("#ff3838")
-	decline_style.set_corner_radius_all(60)
-	decline_button.add_theme_stylebox_override("normal", decline_style)
-	
-	var decline_hover := StyleBoxFlat.new()
-	decline_hover.bg_color = Color("#cc2020")
-	decline_hover.set_corner_radius_all(60)
-	decline_button.add_theme_stylebox_override("hover", decline_hover)
-	
-	decline_button.pressed.connect(_on_decline_pressed)
-	button_row.add_child(decline_button)
-	
-	# Accept button (green check)
-	accept_button = Button.new()
-	accept_button.text = "✅\nSELECT\nHERO"
-	accept_button.custom_minimum_size = Vector2(120, 120)
-	accept_button.add_theme_font_size_override("font_size", 18)
-	
-	var accept_style := StyleBoxFlat.new()
-	accept_style.bg_color = Color("#4ecca3")
-	accept_style.set_corner_radius_all(60)
-	accept_button.add_theme_stylebox_override("normal", accept_style)
-	
-	var accept_hover := StyleBoxFlat.new()
-	accept_hover.bg_color = Color("#45b393")
-	accept_hover.set_corner_radius_all(60)
-	accept_button.add_theme_stylebox_override("hover", accept_hover)
-	
-	accept_button.pressed.connect(_show_hero_selection)
-	button_row.add_child(accept_button)
-
-func _create_active_missions(parent: VBoxContainer) -> void:
-	var active_header := Label.new()
-	active_header.text = "🚀 ACTIVE MISSIONS"
-	active_header.add_theme_font_size_override("font_size", 18)
-	active_header.add_theme_color_override("font_color", Color("#00d9ff"))
-	parent.add_child(active_header)
-	
-	active_missions_panel = VBoxContainer.new()
-	active_missions_panel.add_theme_constant_override("separation", 5)
-	parent.add_child(active_missions_panel)
+	mission_card_container.add_child(mission_card)
 
 func _update_mission_card() -> void:
 	if not rapid_manager:
@@ -179,7 +73,6 @@ func _update_mission_card() -> void:
 	mission_card.update_mission(mission, best_hero)
 	
 	# Update available heroes count
-	var heroes_label = stats_panel.get_node("HeroesLabel")
 	var available = rapid_manager.get_available_heroes_count()
 	heroes_label.text = "👥 %d/%d" % [available, game_manager.heroes.size()]
 	
