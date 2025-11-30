@@ -334,6 +334,7 @@ func apply_chaos_to_mission(mission: Mission) -> void:
 		mission.required_power += 15 * effects.difficulty_increase
 		mission.damage_risk += 0.1 * effects.difficulty_increase
 
+
 func get_zone_status_text(zone: String) -> String:
 	"""Get status text for a zone"""
 	var level = get_chaos_level(zone)
@@ -341,15 +342,14 @@ func get_zone_status_text(zone: String) -> String:
 	return "%s: %.0f%% Chaos (%s)" % [zone.capitalize(), level, tier]
 
 func serialize() -> Dictionary:
-	"""Serialize chaos system state for saving"""
-	return {
-		"zone_chaos": zone_chaos.duplicate()
-	}
+	return zone_chaos.duplicate()
 
 func deserialize(data: Dictionary) -> void:
-	"""Deserialize chaos system state from save data"""
-	if data.has("zone_chaos"):
-		zone_chaos = data.zone_chaos.duplicate()
+	zone_chaos = data.duplicate()
+	# Re-emit signals to update UI/displays after load
+	for zone in zone_chaos.keys():
+		chaos_level_changed.emit(zone, zone_chaos[zone])
+		_check_threshold_crossing(zone, 0.0, zone_chaos[zone])  # Or previous value if tracked
 
 func reset() -> void:
 	"""Reset all chaos levels to 0"""
