@@ -359,8 +359,9 @@ func _show_hero_selection() -> void:
 	tween.tween_property(hero_selection_overlay, "modulate:a", 1.0, 0.2)
 	tween.tween_property(hero_selection_panel, "scale", Vector2(1.0, 1.0), 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
-func _create_hero_button(hero: Hero, mission: Mission, can_use: bool) -> PanelContainer:
-	var panel := PanelContainer.new()
+func _create_hero_button(hero: Hero, mission: Mission, can_use: bool) -> Button:
+	var btn := Button.new()
+	btn.custom_minimum_size = Vector2(0, 120)
 	
 	var style := StyleBoxFlat.new()
 	if can_use:
@@ -375,39 +376,36 @@ func _create_hero_button(hero: Hero, mission: Mission, can_use: bool) -> PanelCo
 	style.border_width_right = 2
 	style.border_width_bottom = 2
 	style.set_corner_radius_all(10)
-	panel.add_theme_stylebox_override("panel", style)
+	btn.add_theme_stylebox_override("normal", style)
 	
-	var btn := Button.new()
-	btn.custom_minimum_size = Vector2(0, 100)
-	
-	var btn_style := StyleBoxFlat.new()
-	btn_style.bg_color = Color(0, 0, 0, 0)
-	btn.add_theme_stylebox_override("normal", btn_style)
-	btn.add_theme_stylebox_override("pressed", btn_style)
-	
-	var btn_hover := StyleBoxFlat.new()
-	btn_hover.bg_color = Color(1, 1, 1, 0.1)
-	btn.add_theme_stylebox_override("hover", btn_hover)
-	
-	panel.add_child(btn)
+	var hover_style := StyleBoxFlat.new()
+	if can_use:
+		hover_style.bg_color = Color("#16213e")
+		hover_style.border_color = Color("#4ecca3")
+	else:
+		hover_style.bg_color = Color("#1a1a1a")
+		hover_style.border_color = Color("#555555")
+	hover_style.border_width_left = 2
+	hover_style.border_width_top = 2
+	hover_style.border_width_right = 2
+	hover_style.border_width_bottom = 2
+	hover_style.set_corner_radius_all(10)
+	btn.add_theme_stylebox_override("hover", hover_style)
 	
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 15)
 	margin.add_theme_constant_override("margin_right", 15)
 	margin.add_theme_constant_override("margin_top", 10)
 	margin.add_theme_constant_override("margin_bottom", 10)
-	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	btn.add_child(margin)
 	
 	var hbox := HBoxContainer.new()
 	hbox.add_theme_constant_override("separation", 15)
-	hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	margin.add_child(hbox)
 	
 	var left_vbox := VBoxContainer.new()
 	left_vbox.add_theme_constant_override("separation", 5)
 	left_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	left_vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hbox.add_child(left_vbox)
 	
 	var name_label := Label.new()
@@ -438,23 +436,29 @@ func _create_hero_button(hero: Hero, mission: Mission, can_use: bool) -> PanelCo
 		left_vbox.add_child(match_label)
 	
 	var right_vbox := VBoxContainer.new()
-	right_vbox.add_theme_constant_override("separation", 5)
-	right_vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	right_vbox.add_theme_constant_override("separation", 8)
 	hbox.add_child(right_vbox)
 	
+	# Energy section
+	var energy_section := VBoxContainer.new()
+	energy_section.add_theme_constant_override("separation", 3)
+	right_vbox.add_child(energy_section)
+	
 	var energy_label := Label.new()
-	energy_label.text = "Energy"
+	energy_label.text = "⚡ Energy"
 	energy_label.add_theme_font_size_override("font_size", 12)
 	energy_label.add_theme_color_override("font_color", Color("#a8a8a8"))
-	right_vbox.add_child(energy_label)
+	energy_section.add_child(energy_label)
 	
 	var energy_bar := ProgressBar.new()
-	energy_bar.custom_minimum_size = Vector2(120, 20)
+	energy_bar.custom_minimum_size = Vector2(120, 16)
 	energy_bar.max_value = 100
 	energy_bar.value = rapid_manager.get_hero_energy(hero.hero_id)
+	energy_bar.show_percentage = false
 	
 	var bar_bg := StyleBoxFlat.new()
 	bar_bg.bg_color = Color("#1a1a2e")
+	bar_bg.set_corner_radius_all(4)
 	energy_bar.add_theme_stylebox_override("background", bar_bg)
 	
 	var bar_fill := StyleBoxFlat.new()
@@ -462,14 +466,54 @@ func _create_hero_button(hero: Hero, mission: Mission, can_use: bool) -> PanelCo
 		bar_fill.bg_color = Color("#4ecca3")
 	else:
 		bar_fill.bg_color = Color("#555555")
+	bar_fill.set_corner_radius_all(4)
 	energy_bar.add_theme_stylebox_override("fill", bar_fill)
 	
-	right_vbox.add_child(energy_bar)
+	energy_section.add_child(energy_bar)
 	
 	var energy_text := Label.new()
 	energy_text.text = "%.0f%%" % rapid_manager.get_hero_energy(hero.hero_id)
-	energy_text.add_theme_font_size_override("font_size", 14)
-	right_vbox.add_child(energy_text)
+	energy_text.add_theme_font_size_override("font_size", 12)
+	energy_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	energy_section.add_child(energy_text)
+	
+	# Stamina section
+	var stamina_section := VBoxContainer.new()
+	stamina_section.add_theme_constant_override("separation", 3)
+	right_vbox.add_child(stamina_section)
+	
+	var stamina_label := Label.new()
+	stamina_label.text = "💨 Stamina"
+	stamina_label.add_theme_font_size_override("font_size", 12)
+	stamina_label.add_theme_color_override("font_color", Color("#a8a8a8"))
+	stamina_section.add_child(stamina_label)
+	
+	var stamina_bar := ProgressBar.new()
+	stamina_bar.custom_minimum_size = Vector2(120, 16)
+	stamina_bar.max_value = hero.max_stamina
+	stamina_bar.value = hero.current_stamina
+	stamina_bar.show_percentage = false
+	
+	var stamina_bg := StyleBoxFlat.new()
+	stamina_bg.bg_color = Color("#1a1a2e")
+	stamina_bg.set_corner_radius_all(4)
+	stamina_bar.add_theme_stylebox_override("background", stamina_bg)
+	
+	var stamina_fill := StyleBoxFlat.new()
+	if hero.current_stamina >= 20:
+		stamina_fill.bg_color = Color("#00d9ff")
+	else:
+		stamina_fill.bg_color = Color("#ff6b6b")
+	stamina_fill.set_corner_radius_all(4)
+	stamina_bar.add_theme_stylebox_override("fill", stamina_fill)
+	
+	stamina_section.add_child(stamina_bar)
+	
+	var stamina_text := Label.new()
+	stamina_text.text = "%.0f/%.0f" % [hero.current_stamina, hero.max_stamina]
+	stamina_text.add_theme_font_size_override("font_size", 12)
+	stamina_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	stamina_section.add_child(stamina_text)
 	
 	if not can_use:
 		var status := Label.new()
@@ -486,7 +530,7 @@ func _create_hero_button(hero: Hero, mission: Mission, can_use: bool) -> PanelCo
 	else:
 		btn.disabled = true
 	
-	return panel
+	return btn
 
 func _on_hero_selected(hero: Hero) -> void:
 	selected_hero = hero
