@@ -1,0 +1,119 @@
+{
+  "starting_heroes": [
+	{
+	  "name": "Captain Justice",
+	  "emoji": "🦸‍♂️",
+	  "specialties": ["COMBAT", "RESCUE"]
+	},
+	{
+	  "name": "Tech Wizard",
+	  "emoji": "🧙‍♂️",
+	  "specialties": ["TECH", "INVESTIGATION"]
+	},
+	{
+	  "name": "Swift Shadow",
+	  "emoji": "🦇",
+	  "specialties": ["SPEED", "INVESTIGATION"]
+	}
+  ],
+  "recruitable_heroes": {
+	"common": [
+	  {
+		"name": "Street Guardian",
+		"emoji": "🥊",
+		"specialties": ["COMBAT"]
+	  },
+	  {
+		"name": "Fast Response",
+		"emoji": "💨",
+		"specialties": ["SPEED"]
+	  },
+	  {
+		"name": "Tech Support",
+		"emoji": "🔧",
+		"specialties": ["TECH"]
+	  },
+	  {
+		"name": "First Responder",
+		"emoji": "🚑",
+		"specialties": ["RESCUE"]
+	  },
+	  {
+		"name": "Beat Cop",
+		"emoji": "👮",
+		"specialties": ["INVESTIGATION"]
+	  },
+	  {
+		"name": "Rookie Hero",
+		"emoji": "🦸",
+		"specialties": ["COMBAT"]
+	  }
+	],
+	"rare": [
+	  {
+		"name": "Shadow Strike",
+		"emoji": "🥷",
+		"specialties": ["COMBAT", "SPEED"]
+	  },
+	  {
+		"name": "Cyber Sentinel",
+		"emoji": "🤖",
+		"specialties": ["TECH", "INVESTIGATION"]
+	  },
+	  {
+		"name": "Blaze Runner",
+		"emoji": "🔥",
+		"specialties": ["RESCUE", "SPEED"]
+	  },
+	  {
+		"name": "Iron Fist",
+		"emoji": "🦾",
+		"specialties": ["COMBAT", "TECH"]
+	  },
+	  {
+		"name": "Mind Reader",
+		"emoji": "🧠",
+		"specialties": ["INVESTIGATION", "RESCUE"]
+	  }
+	],
+	"epic": [
+	  {
+		"name": "Thunder Strike",
+		"emoji": "⚡",
+		"specialties": ["COMBAT", "SPEED", "TECH"]
+	  },
+	  {
+		"name": "Phoenix",
+		"emoji": "🔥",
+		"specialties": ["RESCUE", "COMBAT", "SPEED"]
+	  },
+	  {
+		"name": "Detective Noir",
+		"emoji": "🕵️",
+		"specialties": ["INVESTIGATION", "TECH", "COMBAT"]
+	  },
+	  {
+		"name": "Titanium",
+		"emoji": "🛡️",
+		"specialties": ["COMBAT", "RESCUE", "TECH"]
+	  }
+	],
+	"legendary": [
+	  {
+		"name": "Omega Prime",
+		"emoji": "👑",
+		"specialties": ["COMBAT", "SPEED", "TECH", "INVESTIGATION"]
+	  },
+	  {
+		"name": "Celestial",
+		"emoji": "✨",
+		"specialties": ["RESCUE", "COMBAT", "SPEED", "TECH"]
+	  },
+	  {
+		"name": "Apex",
+		"emoji": "💎",
+		"specialties": ["COMBAT", "INVESTIGATION", "TECH", "RESCUE"]
+	  }
+	]
+  }
+}

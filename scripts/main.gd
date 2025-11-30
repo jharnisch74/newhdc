@@ -1,12 +1,14 @@
 # res://scripts/main.gd
-# Rapid Response system integrated
+# Simplified main script - UI structure now in scene file
 extends Control
 
-# UI Node References - will be created dynamically
-var money_label: Label
-var fame_label: Label
-var title_label: Label
-var content_container: Control
+# UI Node References - assigned from scene
+@onready var money_label: Label = $MainMargin/MainLayout/HeaderPanel/MarginContainer/HBoxContainer/ResourceVBox/MoneyLabel
+@onready var fame_label: Label = $MainMargin/MainLayout/HeaderPanel/MarginContainer/HBoxContainer/ResourceVBox/FameLabel
+@onready var title_label: Label = $MainMargin/MainLayout/HeaderPanel/MarginContainer/HBoxContainer/TitleLabel
+@onready var content_container: Control = $MainMargin/MainLayout/ContentContainer
+@onready var upgrade_button: Button = $MainMargin/MainLayout/ButtonBar/UpgradeButton
+@onready var recruit_button: Button = $MainMargin/MainLayout/ButtonBar/RecruitButton
 
 # Game Manager
 var game_manager: Node
@@ -23,12 +25,15 @@ var upgrade_panel: CanvasLayer
 var recruitment_panel: CanvasLayer
 
 func _ready() -> void:
-	_create_ui()
 	_initialize_game_manager()
 	_initialize_save_manager()
 	await _initialize_rapid_response()
-	_setup_upgrade_panel()  # No await needed now
-	_setup_recruitment_panel()  # No await needed now
+	_setup_upgrade_panel()
+	_setup_recruitment_panel()
+	
+	# Connect button signals
+	upgrade_button.pressed.connect(_show_upgrade_panel)
+	recruit_button.pressed.connect(_show_recruitment_panel)
 	
 	# Wait for UI to be laid out
 	await get_tree().process_frame
@@ -39,76 +44,6 @@ func _ready() -> void:
 	#	_initial_ui_update()
 	#else:
 	#	_refresh_ui()
-
-func _create_ui() -> void:
-	"""Create the UI dynamically"""
-	set_anchors_preset(PRESET_FULL_RECT)
-	
-	# Background
-	var bg := ColorRect.new()
-	bg.color = Color("#0f1624")
-	bg.set_anchors_preset(PRESET_FULL_RECT)
-	add_child(bg)
-	
-	# Main container
-	var margin := MarginContainer.new()
-	margin.name = "MainMargin"
-	margin.set_anchors_preset(PRESET_FULL_RECT)
-	add_child(margin)
-	
-	var vbox := VBoxContainer.new()
-	vbox.name = "MainLayout"
-	margin.add_child(vbox)
-	
-	# Header
-	var header := PanelContainer.new()
-	header.name = "HeaderPanel"
-	header.custom_minimum_size = Vector2(0, 70)
-	vbox.add_child(header)
-	
-	var header_style := StyleBoxFlat.new()
-	header_style.bg_color = Color("#16213e")
-	header_style.set_corner_radius_all(10)
-	header.add_theme_stylebox_override("panel", header_style)
-	
-	var header_hbox := HBoxContainer.new()
-	header.add_child(header_hbox)
-	
-	# Title
-	title_label = Label.new()
-	title_label.text = "⚡ RAPID RESPONSE"
-	title_label.add_theme_font_size_override("font_size", 28)
-	title_label.add_theme_color_override("font_color", Color("#00d9ff"))
-	title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	header_hbox.add_child(title_label)
-	
-	var spacer := Control.new()
-	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header_hbox.add_child(spacer)
-	
-	# Resources
-	var resource_vbox := VBoxContainer.new()
-	header_hbox.add_child(resource_vbox)
-	
-	money_label = Label.new()
-	money_label.text = "💰 Money: $500"
-	money_label.add_theme_font_size_override("font_size", 18)
-	money_label.add_theme_color_override("font_color", Color("#4ecca3"))
-	resource_vbox.add_child(money_label)
-	
-	fame_label = Label.new()
-	fame_label.text = "⭐ Fame: 0"
-	fame_label.add_theme_font_size_override("font_size", 18)
-	fame_label.add_theme_color_override("font_color", Color("#ffd700"))
-	resource_vbox.add_child(fame_label)
-	
-	# Content container
-	content_container = Control.new()
-	content_container.name = "ContentContainer"
-	content_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	vbox.add_child(content_container)
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
@@ -162,7 +97,6 @@ func _initialize_rapid_response() -> void:
 	rapid_ui.setup(rapid_manager, game_manager)
 
 func _setup_upgrade_panel() -> void:
-	# Use call_deferred to avoid blocking
 	call_deferred("_load_upgrade_panel")
 
 func _load_upgrade_panel() -> void:
@@ -174,7 +108,6 @@ func _load_upgrade_panel() -> void:
 		print("Warning: upgrade_panel.tscn not found")
 
 func _setup_recruitment_panel() -> void:
-	# Use call_deferred to avoid blocking
 	call_deferred("_load_recruitment_panel")
 
 func _load_recruitment_panel() -> void:
@@ -183,7 +116,6 @@ func _load_recruitment_panel() -> void:
 	recruitment_panel.set_script(preload("res://scripts/recruitment_panel.gd"))
 	add_child(recruitment_panel)
 	
-	# Setup after added to tree
 	if recruitment_panel.has_method("setup"):
 		recruitment_panel.setup(game_manager, game_manager.recruitment_system)
 
@@ -196,11 +128,9 @@ func _refresh_ui() -> void:
 	fame_label.text = "⭐ Fame: %d" % game_manager.fame
 
 func _on_hero_updated(_hero: Hero) -> void:
-	# Heroes updated, refresh UI if needed
 	pass
 
 func _input(event: InputEvent) -> void:
-	# Debug hotkeys
 	if event.is_action_pressed("ui_cancel"):
 		if Input.is_key_pressed(KEY_F9):
 			_debug_reset_heroes()
@@ -234,7 +164,6 @@ func _debug_delete_save() -> void:
 		DirAccess.remove_absolute(SAVE_PATH)
 		print("  ✅ Save deleted")
 	
-	# Reload
 	get_tree().reload_current_scene()
 
 func _show_upgrade_panel() -> void:

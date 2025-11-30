@@ -9,17 +9,13 @@ extends CanvasLayer
 
 # Data
 var game_manager: Node
-# Dictionary to store the expanded state: {hero_name: is_expanded (bool)}
 var hero_expansion_states: Dictionary = {} 
 
-# Constants for better readability
+# Constants
 const HEADER_COLOR = Color("#16213e")
 const FONT_COLOR = Color("#00d9ff")
 const UPGRADE_COLOR = Color("#4ecca3")
 const UPGRADE_HOVER_COLOR = Color("#45b393")
-
-## Initialization and Panel Control
-#-------------------------------------------------------------------------------
 
 func _ready() -> void:
 	visible = false
@@ -39,27 +35,20 @@ func _on_close_pressed() -> void:
 
 func _on_overlay_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		# Check if click is outside the upgrade window
 		var window = $Overlay/CenterContainer/UpgradeWindow
 		var window_rect = Rect2(window.global_position, window.size)
 		if not window_rect.has_point(event.position):
 			hide_panel()
 
-## Upgrade Population and State Management
-#-------------------------------------------------------------------------------
-
 func _populate_upgrades() -> void:
-	# 1. Capture the current expanded state before clearing the UI
+	# Capture current expanded state
 	var current_states: Dictionary = {}
 	for child in upgrade_list.get_children():
-		# Check for the collapsible hero header button
 		if child is Button and child.has_meta("hero_name"):
 			var hero_name = child.get_meta("hero_name")
-			# The next child is the upgrade_content VBoxContainer
 			var next_child_index = child.get_index() + 1
 			if next_child_index < upgrade_list.get_child_count():
 				var upgrade_content = upgrade_list.get_child(next_child_index)
-				# Only capture state if it's the VBoxContainer content
 				if upgrade_content is VBoxContainer:
 					current_states[hero_name] = upgrade_content.visible
 	
@@ -70,24 +59,30 @@ func _populate_upgrades() -> void:
 	if not game_manager:
 		return
 	
-	# 2. Store captured state for use when recreating the sections
 	hero_expansion_states = current_states
 	
 	# Create a collapsible section for each hero
 	for hero in game_manager.heroes:
 		_create_hero_collapsible_section(hero)
+	
+	# Update cost label
+	var total_money = game_manager.money
+	cost_label.text = "💰 Available: $%d" % total_money
 
 func _create_hero_collapsible_section(hero: Hero) -> void:
-	# 1. Collapsible Header Button
+	# Header Button
 	var toggle_button = Button.new()
-	toggle_button.text = "%s %s (Lv.%d)" % [hero.hero_emoji, hero.hero_name, hero.level]
-	# Store the hero name to identify the section when reading state
-	toggle_button.set_meta("hero_name", hero.hero_name) 
+	toggle_button.text = "%s %s (Lv.%d) - Power: %d" % [
+		hero.hero_emoji, 
+		hero.hero_name, 
+		hero.level,
+		hero.get_power_rating()
+	]
+	toggle_button.set_meta("hero_name", hero.hero_name)
 	toggle_button.add_theme_font_size_override("font_size", 18)
 	toggle_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	toggle_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	
-	# Styling for the header button
 	var btn_style = StyleBoxFlat.new()
 	btn_style.bg_color = HEADER_COLOR
 	btn_style.set_corner_radius_all(5)
@@ -101,15 +96,21 @@ func _create_hero_collapsible_section(hero: Hero) -> void:
 
 	upgrade_list.add_child(toggle_button)
 
-	# 2. Container for the Upgrade List (The content that gets toggled)
+	# Content Container
 	var upgrade_content = VBoxContainer.new()
-	
-	# 3. Restore the expansion state based on the captured dictionary
-	var should_be_expanded = hero_expansion_states.get(hero.hero_name, false) # Default to false (collapsed)
+	var should_be_expanded = hero_expansion_states.get(hero.hero_name, false)
 	upgrade_content.visible = should_be_expanded
-	upgrade_content.add_theme_constant_override("separation", 5) 
+	upgrade_content.add_theme_constant_override("separation", 8)
 	
-	# 4. Populate the content container with stat upgrade items
+	# Hero Status Info
+	var status_panel = _create_hero_status_panel(hero)
+	upgrade_content.add_child(status_panel)
+	
+	# Add separator
+	var sep = HSeparator.new()
+	upgrade_content.add_child(sep)
+	
+	# Stat Upgrades
 	var stats = [
 		{"type": "strength", "label": "💪 Strength", "current": hero.get_total_strength()},
 		{"type": "speed", "label": "⚡ Speed", "current": hero.get_total_speed()},
@@ -119,25 +120,151 @@ func _create_hero_collapsible_section(hero: Hero) -> void:
 	]
 	
 	for stat in stats:
-		# Calling the function to create a single upgrade item 
-		var item = _create_upgrade_item(hero, stat.type, stat.label, stat.current) 
+		var item = _create_upgrade_item(hero, stat.type, stat.label, stat.current)
 		var margin_container = MarginContainer.new()
-		margin_container.add_theme_constant_override("margin_left", 15) # Indent the stats
+		margin_container.add_theme_constant_override("margin_left", 15)
 		margin_container.add_child(item)
 		upgrade_content.add_child(margin_container)
 	
 	upgrade_list.add_child(upgrade_content)
 	
-	# 5. Connect the toggle button (This function is connected once per hero)
-	toggle_button.pressed.connect(func(): upgrade_content.visible = !upgrade_content.visible)
+	# Connect toggle
+	toggle_button.pressed.connect(func(): 
+		upgrade_content.visible = !upgrade_content.visible
+	)
 
 	# Spacer
 	var spacer = Control.new()
 	spacer.custom_minimum_size = Vector2(0, 10)
 	upgrade_list.add_child(spacer)
 
-## Helper Function (MUST be at the root level of the script)
-#-------------------------------------------------------------------------------
+func _create_hero_status_panel(hero: Hero) -> PanelContainer:
+	var panel = PanelContainer.new()
+	
+	var panel_style = StyleBoxFlat.new()
+	panel_style.bg_color = Color("#0f1624")
+	panel_style.set_corner_radius_all(8)
+	panel_style.border_width_left = 2
+	panel_style.border_width_top = 2
+	panel_style.border_width_right = 2
+	panel_style.border_width_bottom = 2
+	panel_style.border_color = Color("#4ecca3")
+	panel.add_theme_stylebox_override("panel", panel_style)
+	
+	var margin = MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 15)
+	margin.add_theme_constant_override("margin_right", 15)
+	margin.add_theme_constant_override("margin_top", 10)
+	margin.add_theme_constant_override("margin_bottom", 10)
+	panel.add_child(margin)
+	
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 8)
+	margin.add_child(vbox)
+	
+	# Status
+	var status_label = Label.new()
+	status_label.text = "Status: " + hero.get_status_text()
+	status_label.add_theme_font_size_override("font_size", 14)
+	vbox.add_child(status_label)
+	
+	# Health bar
+	var health_container = VBoxContainer.new()
+	health_container.add_theme_constant_override("separation", 3)
+	vbox.add_child(health_container)
+	
+	var health_label = Label.new()
+	health_label.text = "❤️ Health: %.0f / %.0f" % [hero.current_health, hero.max_health]
+	health_label.add_theme_font_size_override("font_size", 12)
+	health_container.add_child(health_label)
+	
+	var health_bar = ProgressBar.new()
+	health_bar.custom_minimum_size = Vector2(0, 16)
+	health_bar.max_value = hero.max_health
+	health_bar.value = hero.current_health
+	health_bar.show_percentage = false
+	
+	var health_bg = StyleBoxFlat.new()
+	health_bg.bg_color = Color("#1a1a2e")
+	health_bar.add_theme_stylebox_override("background", health_bg)
+	
+	var health_fill = StyleBoxFlat.new()
+	health_fill.bg_color = Color("#ff6b6b")
+	health_bar.add_theme_stylebox_override("fill", health_fill)
+	
+	health_container.add_child(health_bar)
+	
+	# Stamina bar
+	var stamina_container = VBoxContainer.new()
+	stamina_container.add_theme_constant_override("separation", 3)
+	vbox.add_child(stamina_container)
+	
+	var stamina_label = Label.new()
+	stamina_label.text = "⚡ Stamina: %.0f / %.0f" % [hero.current_stamina, hero.max_stamina]
+	stamina_label.add_theme_font_size_override("font_size", 12)
+	stamina_container.add_child(stamina_label)
+	
+	var stamina_bar = ProgressBar.new()
+	stamina_bar.custom_minimum_size = Vector2(0, 16)
+	stamina_bar.max_value = hero.max_stamina
+	stamina_bar.value = hero.current_stamina
+	stamina_bar.show_percentage = false
+	
+	var stamina_bg = StyleBoxFlat.new()
+	stamina_bg.bg_color = Color("#1a1a2e")
+	stamina_bar.add_theme_stylebox_override("background", stamina_bg)
+	
+	var stamina_fill = StyleBoxFlat.new()
+	stamina_fill.bg_color = Color("#00d9ff")
+	stamina_bar.add_theme_stylebox_override("fill", stamina_fill)
+	
+	stamina_container.add_child(stamina_bar)
+	
+	# Experience
+	var exp_label = Label.new()
+	exp_label.text = "✨ Experience: %d / %d" % [hero.experience, hero.exp_to_next_level]
+	exp_label.add_theme_font_size_override("font_size", 12)
+	vbox.add_child(exp_label)
+	
+	var exp_bar = ProgressBar.new()
+	exp_bar.custom_minimum_size = Vector2(0, 12)
+	exp_bar.max_value = hero.exp_to_next_level
+	exp_bar.value = hero.experience
+	exp_bar.show_percentage = false
+	
+	var exp_bg = StyleBoxFlat.new()
+	exp_bg.bg_color = Color("#1a1a2e")
+	exp_bar.add_theme_stylebox_override("background", exp_bg)
+	
+	var exp_fill = StyleBoxFlat.new()
+	exp_fill.bg_color = Color("#ffd700")
+	exp_bar.add_theme_stylebox_override("fill", exp_fill)
+	
+	vbox.add_child(exp_bar)
+	
+	# Specialties
+	var spec_label = Label.new()
+	var spec_text = "🎯 Specialties: "
+	var spec_names = []
+	for spec in hero.specialties:
+		match spec:
+			Hero.Specialty.COMBAT:
+				spec_names.append("Combat")
+			Hero.Specialty.SPEED:
+				spec_names.append("Speed")
+			Hero.Specialty.TECH:
+				spec_names.append("Tech")
+			Hero.Specialty.RESCUE:
+				spec_names.append("Rescue")
+			Hero.Specialty.INVESTIGATION:
+				spec_names.append("Investigation")
+	spec_text += ", ".join(spec_names)
+	spec_label.text = spec_text
+	spec_label.add_theme_font_size_override("font_size", 12)
+	spec_label.add_theme_color_override("font_color", Color("#ffcc00"))
+	vbox.add_child(spec_label)
+	
+	return panel
 
 func _create_upgrade_item(hero: Hero, stat_type: String, label_text: String, current_value: int) -> HBoxContainer:
 	var container = HBoxContainer.new()
@@ -146,8 +273,7 @@ func _create_upgrade_item(hero: Hero, stat_type: String, label_text: String, cur
 	
 	# Stat label
 	var stat_label = Label.new()
-	# The ** around the value makes it stand out slightly (if using a rich text enabled font)
-	stat_label.text = "%s: %d" % [label_text, current_value] 
+	stat_label.text = "%s: %d" % [label_text, current_value]
 	stat_label.add_theme_font_size_override("font_size", 16)
 	stat_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	container.add_child(stat_label)
@@ -165,32 +291,28 @@ func _create_upgrade_item(hero: Hero, stat_type: String, label_text: String, cur
 	upgrade_btn.text = "UPGRADE"
 	upgrade_btn.custom_minimum_size = Vector2(100, 0)
 	
-	var btn_style_normal = StyleBoxFlat.new()
-	btn_style_normal.bg_color = UPGRADE_COLOR
-	btn_style_normal.set_corner_radius_all(5)
-	upgrade_btn.add_theme_stylebox_override("normal", btn_style_normal)
+	var can_afford = game_manager and game_manager.money >= cost
+	upgrade_btn.disabled = not can_afford
 	
-	var btn_style_hover = StyleBoxFlat.new()
-	btn_style_hover.bg_color = UPGRADE_HOVER_COLOR
-	btn_style_hover.set_corner_radius_all(5)
-	upgrade_btn.add_theme_stylebox_override("hover", btn_style_hover)
+	if can_afford:
+		var btn_style_normal = StyleBoxFlat.new()
+		btn_style_normal.bg_color = UPGRADE_COLOR
+		btn_style_normal.set_corner_radius_all(5)
+		upgrade_btn.add_theme_stylebox_override("normal", btn_style_normal)
+		
+		var btn_style_hover = StyleBoxFlat.new()
+		btn_style_hover.bg_color = UPGRADE_HOVER_COLOR
+		btn_style_hover.set_corner_radius_all(5)
+		upgrade_btn.add_theme_stylebox_override("hover", btn_style_hover)
+	else:
+		upgrade_btn.add_theme_color_override("font_color", Color("#666666"))
 	
-	# Connects to the handler function below
 	upgrade_btn.pressed.connect(func(): _on_upgrade_pressed(hero, stat_type))
 	container.add_child(upgrade_btn)
 	
 	return container
 
-## Upgrade Logic
-#-------------------------------------------------------------------------------
-
 func _on_upgrade_pressed(hero: Hero, stat_type: String) -> void:
 	if game_manager:
 		if game_manager.upgrade_hero_stat(hero, stat_type):
-			# This call to _populate_upgrades() refreshes the UI
-			# but now correctly restores the expansion state.
-			_populate_upgrades() 
-
-func _create_upgrade_items() -> void:
-	# Placeholder from original code, kept for compatibility if other code calls it
-	pass
+			_populate_upgrades()
