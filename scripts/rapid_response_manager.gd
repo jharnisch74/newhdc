@@ -380,10 +380,11 @@ func _complete_mission_slot(slot: Dictionary) -> void:
 	var hero: Hero = slot.hero
 	
 	var result = mission.complete_mission()
+	var success = result.success # Extract success status for the signal
 	
 	# Update chaos
 	if game_manager.chaos_system:
-		if result.success:
+		if success:
 			game_manager.chaos_system.on_mission_success(mission)
 			var prevented = 8.0 + (mission.difficulty * 2.0)
 			total_chaos_prevented += prevented
@@ -391,12 +392,13 @@ func _complete_mission_slot(slot: Dictionary) -> void:
 			game_manager.chaos_system.on_mission_failed(mission)
 	
 	# Give rewards
+	# NOTE: Your game_manager functions (add_money/add_fame) handle the UI update
 	game_manager.add_money(result.money)
 	game_manager.add_fame(result.fame)
 	hero.add_experience(result.exp)
 	
 	# Damage risk
-	if not result.success or randf() < mission.damage_risk:
+	if not success or randf() < mission.damage_risk:
 		var damage = randf_range(10, 20)
 		hero.take_damage(damage)
 	
@@ -410,7 +412,11 @@ func _complete_mission_slot(slot: Dictionary) -> void:
 	# Remove from active slots
 	active_slots.erase(slot)
 	
-	print("✅ Mission completed: %s by %s" % [mission.mission_name, hero.hero_name])
+	# 🚨 CRITICAL FIX: Emit the signal from GameManager 🚨
+	# This sends the result to the mission_results_panel._on_mission_completed
+	game_manager.mission_completed.emit(mission, success, hero) 
+	
+	print("✅ Mission completed: %s by %s (Success: %s)" % [mission.mission_name, hero.hero_name, str(success)])
 
 func _regenerate_hero_energy(delta: float) -> void:
 	"""Regenerate energy for all heroes"""

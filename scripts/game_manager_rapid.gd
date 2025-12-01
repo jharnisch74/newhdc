@@ -2,6 +2,8 @@
 # Simplified game manager for Rapid Response system
 extends Node
 
+signal mission_completed(mission: Mission, success: bool, hero: Hero)
+
 # Resources
 var money: int = 500
 var fame: int = 0

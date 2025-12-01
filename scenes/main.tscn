@@ -106,7 +106,7 @@ theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
 theme_override_font_sizes/font_size = 18
 text = "🎰 RECRUIT"
 
-[node name="ContentContainer" type="CenterContainer" parent="MainMargin/MainLayout"]
+[node name="ContentContainer" type="VBoxContainer" parent="MainMargin/MainLayout"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3

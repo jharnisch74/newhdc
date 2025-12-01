@@ -1,0 +1,177 @@
+[gd_scene load_steps=2 format=3 uid="uid://d85unld66f86"]
+
+[ext_resource type="Script" uid="uid://dun5f3ms8bp0m" path="res://scripts/map_mission_ui.gd" id="1"]
+
+[node name="MapMissionUI" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1")
+
+[node name="UIRoot" type="VBoxContainer" parent="."]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+size_flags_vertical = 3
+
+[node name="Header" type="PanelContainer" parent="UIRoot"]
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+
+[node name="HeaderMargin" type="MarginContainer" parent="UIRoot/Header"]
+layout_mode = 2
+
+[node name="HeaderHBox" type="HBoxContainer" parent="UIRoot/Header/HeaderMargin"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Title" type="Label" parent="UIRoot/Header/HeaderMargin/HeaderHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "🗺️ MISSION MAP"
+
+[node name="StatsVBox" type="VBoxContainer" parent="UIRoot/Header/HeaderMargin/HeaderHBox"]
+layout_mode = 2
+
+[node name="MoneyLabel" type="Label" parent="UIRoot/Header/HeaderMargin/HeaderHBox/StatsVBox"]
+layout_mode = 2
+text = "💰 $500"
+
+[node name="FameLabel" type="Label" parent="UIRoot/Header/HeaderMargin/HeaderHBox/StatsVBox"]
+layout_mode = 2
+text = "⭐ Fame: 0"
+
+[node name="MapViewport" type="SubViewportContainer" parent="UIRoot"]
+layout_mode = 2
+size_flags_vertical = 3
+stretch = true
+
+[node name="MapContainer" type="Control" parent="UIRoot/MapViewport"]
+clip_contents = true
+custom_minimum_size = Vector2(1440, 2560)
+layout_mode = 2
+
+[node name="Background" type="ColorRect" parent="UIRoot/MapViewport/MapContainer"]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.0588235, 0.0862745, 0.141176, 1)
+
+[node name="ZoomControls" type="VBoxContainer" parent="."]
+layout_mode = 0
+offset_left = 1320.0
+offset_top = 500.0
+offset_right = 1320.0
+offset_bottom = 500.0
+
+[node name="ZoomIn" type="Button" parent="ZoomControls"]
+custom_minimum_size = Vector2(60, 60)
+layout_mode = 2
+text = "+"
+
+[node name="ZoomOut" type="Button" parent="ZoomControls"]
+custom_minimum_size = Vector2(60, 60)
+layout_mode = 2
+text = "−"
+
+[node name="ZoomLabel" type="Label" parent="ZoomControls"]
+layout_mode = 2
+text = "100%"
+horizontal_alignment = 1
+
+[node name="MissionDetailPanel" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -400.0
+
+[node name="Scroll" type="ScrollContainer" parent="MissionDetailPanel"]
+custom_minimum_size = Vector2(0, 400)
+layout_mode = 2
+
+[node name="DetailMargin" type="MarginContainer" parent="MissionDetailPanel/Scroll"]
+layout_mode = 2
+
+[node name="DetailVBox" type="VBoxContainer" parent="MissionDetailPanel/Scroll/DetailMargin"]
+layout_mode = 2
+
+[node name="DetailHeader" type="HBoxContainer" parent="MissionDetailPanel/Scroll/DetailMargin/DetailVBox"]
+layout_mode = 2
+
+[node name="MissionTitle" type="Label" parent="MissionDetailPanel/Scroll/DetailMargin/DetailVBox/DetailHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Mission Name"
+
+[node name="CloseButton" type="Button" parent="MissionDetailPanel/Scroll/DetailMargin/DetailVBox/DetailHeader"]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+text = "✕"
+
+[node name="InfoGrid" type="GridContainer" parent="MissionDetailPanel/Scroll/DetailMargin/DetailVBox"]
+layout_mode = 2
+columns = 3
+
+[node name="RewardPanel" type="PanelContainer" parent="MissionDetailPanel/Scroll/DetailMargin/DetailVBox/InfoGrid"]
+custom_minimum_size = Vector2(200, 80)
+layout_mode = 2
+
+[node name="RewardVBox" type="VBoxContainer" parent="MissionDetailPanel/Scroll/DetailMargin/DetailVBox/InfoGrid/RewardPanel"]
+layout_mode = 2
+
+[node name="RewardLabel" type="Label" parent="MissionDetailPanel/Scroll/DetailMargin/DetailVBox/InfoGrid/RewardPanel/RewardVBox"]
+layout_mode = 2
+text = "💰 $150"
+
+[node name="RewardDesc" type="Label" parent="MissionDetailPanel/Scroll/DetailMargin/DetailVBox/InfoGrid/RewardPanel/RewardVBox"]
+layout_mode = 2
+text = "Reward"
+
+[node name="DurationPanel" type="PanelContainer" parent="MissionDetailPanel/Scroll/DetailMargin/DetailVBox/InfoGrid"]
+custom_minimum_size = Vector2(200, 80)
+layout_mode = 2
+
+[node name="DurationVBox" type="VBoxContainer" parent="MissionDetailPanel/Scroll/DetailMargin/DetailVBox/InfoGrid/DurationPanel"]
+layout_mode = 2
+
+[node name="DurationLabel" type="Label" parent="MissionDetailPanel/Scroll/DetailMargin/DetailVBox/InfoGrid/DurationPanel/DurationVBox"]
+layout_mode = 2
+text = "⏱️ 30s"
+
+[node name="DurationDesc" type="Label" parent="MissionDetailPanel/Scroll/DetailMargin/DetailVBox/InfoGrid/DurationPanel/DurationVBox"]
+layout_mode = 2
+text = "Duration"
+
+[node name="FamePanel" type="PanelContainer" parent="MissionDetailPanel/Scroll/DetailMargin/DetailVBox/InfoGrid"]
+custom_minimum_size = Vector2(200, 80)
+layout_mode = 2
+
+[node name="FameVBox" type="VBoxContainer" parent="MissionDetailPanel/Scroll/DetailMargin/DetailVBox/InfoGrid/FamePanel"]
+layout_mode = 2
+
+[node name="FameLabel" type="Label" parent="MissionDetailPanel/Scroll/DetailMargin/DetailVBox/InfoGrid/FamePanel/FameVBox"]
+layout_mode = 2
+text = "⭐ 10"
+
+[node name="FameDesc" type="Label" parent="MissionDetailPanel/Scroll/DetailMargin/DetailVBox/InfoGrid/FamePanel/FameVBox"]
+layout_mode = 2
+text = "Fame"
+
+[node name="Separator" type="HSeparator" parent="MissionDetailPanel/Scroll/DetailMargin/DetailVBox"]
+layout_mode = 2
+
+[node name="HeroTitle" type="Label" parent="MissionDetailPanel/Scroll/DetailMargin/DetailVBox"]
+layout_mode = 2
+text = "👥 Select Hero"
+
+[node name="HeroSelectionContainer" type="VBoxContainer" parent="MissionDetailPanel/Scroll/DetailMargin/DetailVBox"]
+layout_mode = 2
+
+[node name="AcceptButton" type="Button" parent="MissionDetailPanel/Scroll/DetailMargin/DetailVBox"]
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+text = "✅ ACCEPT MISSION"

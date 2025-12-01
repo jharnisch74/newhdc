@@ -1,12 +1,13 @@
 # res://scripts/main.gd
-# Simplified main script - UI structure now in scene file
+# Main script with map-based UI
 extends Control
 
 # UI Node References - assigned from scene
 @onready var money_label: Label = $MainMargin/MainLayout/HeaderPanel/MarginContainer/HBoxContainer/ResourceVBox/MoneyLabel
 @onready var fame_label: Label = $MainMargin/MainLayout/HeaderPanel/MarginContainer/HBoxContainer/ResourceVBox/FameLabel
 @onready var title_label: Label = $MainMargin/MainLayout/HeaderPanel/MarginContainer/HBoxContainer/TitleLabel
-@onready var content_container: CenterContainer = $MainMargin/MainLayout/ContentContainer
+# 🚨 CORRECTED: The scene node must now be a VBoxContainer 🚨
+@onready var content_container: VBoxContainer = $MainMargin/MainLayout/ContentContainer 
 @onready var upgrade_button: Button = $MainMargin/MainLayout/ButtonBar/UpgradeButton
 @onready var recruit_button: Button = $MainMargin/MainLayout/ButtonBar/RecruitButton
 
@@ -18,7 +19,8 @@ var save_manager: Node
 
 # Rapid Response System
 var rapid_manager: RapidResponseManager
-var rapid_ui: Control
+var map_ui: Control
+var mission_results_panel: Control 
 
 # Upgrade and recruitment panels
 var upgrade_panel: CanvasLayer
@@ -27,19 +29,19 @@ var recruitment_panel: CanvasLayer
 func _ready() -> void:
 	_initialize_game_manager()
 	_initialize_save_manager()
-	await _initialize_rapid_response()
-	_setup_upgrade_panel()
-	_setup_recruitment_panel()
 	
 	# Connect button signals
 	upgrade_button.pressed.connect(_show_upgrade_panel)
 	recruit_button.pressed.connect(_show_recruitment_panel)
 	
-	# Wait for UI to be laid out
+	await _initialize_rapid_response()
+	_setup_upgrade_panel()
+	_setup_recruitment_panel()
+	
 	await get_tree().process_frame
 	await get_tree().process_frame
 	
-	# Try to load save
+	# Try to load save (Uncomment when ready)
 	#if not save_manager.load_game():
 	#	_initial_ui_update()
 	#else:
@@ -57,11 +59,9 @@ func _initialize_game_manager() -> void:
 	game_manager.set_script(preload("res://scripts/game_manager_rapid.gd"))
 	add_child(game_manager)
 	
-	# Connect references
 	game_manager.money_label = money_label
 	game_manager.fame_label = fame_label
 	
-	# Connect signals
 	game_manager.hero_updated.connect(_on_hero_updated)
 
 func _initialize_save_manager() -> void:
@@ -73,46 +73,39 @@ func _initialize_save_manager() -> void:
 	save_manager.set_game_manager(game_manager)
 
 func _initialize_rapid_response() -> void:
-	# Create rapid response manager
 	rapid_manager = RapidResponseManager.new(game_manager)
 	rapid_manager.name = "RapidResponseManager"
 	add_child(rapid_manager)
 	
-	# Store reference in game manager
 	game_manager.rapid_manager = rapid_manager
 	
-	# Wait a frame for manager to be ready
 	await get_tree().process_frame
 	
-	# Load rapid response UI scene
-	var rapid_ui_scene = load("res://scenes/ui/rapid_response_ui.tscn")
-	if rapid_ui_scene:
-		rapid_ui = rapid_ui_scene.instantiate()
-		rapid_ui.name = "RapidResponseUI"
-		content_container.add_child(rapid_ui)
-		
-		# Wait for UI to be in tree
-		await get_tree().process_frame
-		
-		# Setup UI
-		if rapid_ui.has_method("setup"):
-			rapid_ui.setup(rapid_manager, game_manager)
-	else:
-		push_error("Failed to load rapid_response_ui.tscn")
-		# Fallback to code-based UI
-		_create_fallback_ui()
-
-func _create_fallback_ui() -> void:
-	"""Fallback if scene file is missing"""
-	rapid_ui = Control.new()
-	rapid_ui.name = "RapidResponseUI"
-	rapid_ui.set_script(preload("res://scripts/rapid_response_ui.gd"))
-	content_container.add_child(rapid_ui)
+	# 1. Create MAP UI
+	map_ui = Control.new()
+	map_ui.name = "MapMissionUI"
+	map_ui.set_script(preload("res://scripts/map_mission_ui.gd"))
+	# 🚨 Map takes up the remaining vertical space 🚨
+	map_ui.size_flags_vertical = Control.SIZE_EXPAND_FILL 
+	content_container.add_child(map_ui)
+	
+	# 2. Create Mission Results Panel
+	mission_results_panel = Control.new()
+	mission_results_panel.name = "MissionResultsPanel"
+	mission_results_panel.set_script(preload("res://scripts/mission_results_panel.gd"))
+	# 🚨 Panel has a fixed height, allowing the map to fill the rest 🚨
+	mission_results_panel.custom_minimum_size = Vector2(0, 150)
+	content_container.add_child(mission_results_panel)
 	
 	await get_tree().process_frame
 	
-	if rapid_ui.has_method("setup"):
-		rapid_ui.setup(rapid_manager, game_manager)
+	if map_ui.has_method("setup"):
+		map_ui.setup(rapid_manager, game_manager)
+	
+	if mission_results_panel.has_method("setup"):
+		mission_results_panel.setup(game_manager)
+		
+	game_manager.mission_completed.connect(mission_results_panel._on_mission_completed) 
 
 func _setup_upgrade_panel() -> void:
 	call_deferred("_load_upgrade_panel")
@@ -174,14 +167,14 @@ func _debug_reset_heroes() -> void:
 		for hero_id in rapid_manager.hero_energy.keys():
 			rapid_manager.hero_energy[hero_id] = 100.0
 	
-	print("  ✅ All heroes reset!")
+	print("  ✅ All heroes reset!")
 
 func _debug_delete_save() -> void:
 	print("🗑️ DELETING SAVE FILE")
 	const SAVE_PATH = "user://hero_dispatch_save_rapid.json"
 	if FileAccess.file_exists(SAVE_PATH):
 		DirAccess.remove_absolute(SAVE_PATH)
-		print("  ✅ Save deleted")
+		print("  ✅ Save deleted")
 	
 	get_tree().reload_current_scene()
 
