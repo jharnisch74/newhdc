@@ -139,6 +139,36 @@ func get_hero_by_id(id: String) -> Hero:
 func _on_chaos_level_changed(_zone: String, _new_level: float) -> void:
 	pass
 
+# Add this method to game_manager_rapid.gd
+
+# Add this method to game_manager_rapid.gd
+
+func get_zone_chaos_info() -> Dictionary:
+	"""Get formatted chaos information for all zones"""
+	if not chaos_system:
+		print("WARNING: chaos_system is null in get_zone_chaos_info()")
+		return {}
+	
+	var info = {}
+	var zones = ["downtown", "industrial", "residential", "park", "waterfront"]
+	
+	for zone in zones:
+		var level = chaos_system.get_chaos_level(zone)
+		var tier = chaos_system.get_chaos_tier(zone)
+		var color = chaos_system.get_chaos_color(zone)
+		
+		info[zone] = {
+			"level": level,
+			"tier": tier,
+			"color": color
+		}
+		
+		# Debug print occasionally
+		if Engine.get_process_frames() % 300 == 0:  # Every ~5 seconds at 60fps
+			print("Zone %s: %.1f%% (%s)" % [zone, level, tier])
+	
+	return info
+	
 func _on_chaos_threshold_crossed(zone: String, threshold: String) -> void:
 	var tier_emoji = ""
 	match threshold:

@@ -1,12 +1,11 @@
 # res://scripts/main.gd
-# Main script with map-based UI
+# Main script with map-based UI and chaos level display
 extends Control
 
 # UI Node References - assigned from scene
 @onready var money_label: Label = $MainMargin/MainLayout/HeaderPanel/MarginContainer/HBoxContainer/ResourceVBox/MoneyLabel
 @onready var fame_label: Label = $MainMargin/MainLayout/HeaderPanel/MarginContainer/HBoxContainer/ResourceVBox/FameLabel
 @onready var title_label: Label = $MainMargin/MainLayout/HeaderPanel/MarginContainer/HBoxContainer/TitleLabel
-# 🚨 CORRECTED: The scene node must now be a VBoxContainer 🚨
 @onready var content_container: VBoxContainer = $MainMargin/MainLayout/ContentContainer 
 @onready var upgrade_button: Button = $MainMargin/MainLayout/ButtonBar/UpgradeButton
 @onready var recruit_button: Button = $MainMargin/MainLayout/ButtonBar/RecruitButton
@@ -22,6 +21,9 @@ var rapid_manager: RapidResponseManager
 var map_ui: Control
 var mission_results_panel: Control 
 
+# Chaos Level Bar
+var chaos_bar: Control
+
 # Upgrade and recruitment panels
 var upgrade_panel: CanvasLayer
 var recruitment_panel: CanvasLayer
@@ -29,6 +31,9 @@ var recruitment_panel: CanvasLayer
 func _ready() -> void:
 	_initialize_game_manager()
 	_initialize_save_manager()
+	
+	# Create chaos bar
+	_create_chaos_bar()
 	
 	# Connect button signals
 	upgrade_button.pressed.connect(_show_upgrade_panel)
@@ -72,6 +77,23 @@ func _initialize_save_manager() -> void:
 	
 	save_manager.set_game_manager(game_manager)
 
+func _create_chaos_bar() -> void:
+	"""Create and add the chaos level bar to the UI"""
+	# Create chaos bar - use PanelContainer since that's what the script inherits from
+	chaos_bar = PanelContainer.new()
+	chaos_bar.name = "ChaosLevelBar"
+	chaos_bar.set_script(preload("res://scripts/chaos_level_bar.gd"))
+	
+	# Add to content container (before other content)
+	content_container.add_child(chaos_bar)
+	content_container.move_child(chaos_bar, 0)  # Move to top
+	
+	# Setup after game manager is ready
+	await get_tree().process_frame
+	
+	if chaos_bar.has_method("setup"):
+		chaos_bar.setup(game_manager)
+
 func _initialize_rapid_response() -> void:
 	rapid_manager = RapidResponseManager.new(game_manager)
 	rapid_manager.name = "RapidResponseManager"
@@ -85,7 +107,7 @@ func _initialize_rapid_response() -> void:
 	map_ui = Control.new()
 	map_ui.name = "MapMissionUI"
 	map_ui.set_script(preload("res://scripts/map_mission_ui.gd"))
-	# 🚨 Map takes up the remaining vertical space 🚨
+	# Map takes up the remaining vertical space
 	map_ui.size_flags_vertical = Control.SIZE_EXPAND_FILL 
 	content_container.add_child(map_ui)
 	
@@ -93,7 +115,7 @@ func _initialize_rapid_response() -> void:
 	mission_results_panel = Control.new()
 	mission_results_panel.name = "MissionResultsPanel"
 	mission_results_panel.set_script(preload("res://scripts/mission_results_panel.gd"))
-	# 🚨 Panel has a fixed height, allowing the map to fill the rest 🚨
+	# Panel has a fixed height, allowing the map to fill the rest
 	mission_results_panel.custom_minimum_size = Vector2(0, 150)
 	content_container.add_child(mission_results_panel)
 	
@@ -152,6 +174,10 @@ func _input(event: InputEvent) -> void:
 			_show_upgrade_panel()
 		elif Input.is_key_pressed(KEY_F6):
 			_show_recruitment_panel()
+		elif Input.is_key_pressed(KEY_F5):
+			_debug_add_chaos()
+		elif Input.is_key_pressed(KEY_F4):
+			_debug_clear_chaos()
 
 func _debug_reset_heroes() -> void:
 	print("🔧 RESETTING ALL HEROES")
@@ -167,16 +193,29 @@ func _debug_reset_heroes() -> void:
 		for hero_id in rapid_manager.hero_energy.keys():
 			rapid_manager.hero_energy[hero_id] = 100.0
 	
-	print("  ✅ All heroes reset!")
+	print("  ✅ All heroes reset!")
 
 func _debug_delete_save() -> void:
 	print("🗑️ DELETING SAVE FILE")
 	const SAVE_PATH = "user://hero_dispatch_save_rapid.json"
 	if FileAccess.file_exists(SAVE_PATH):
 		DirAccess.remove_absolute(SAVE_PATH)
-		print("  ✅ Save deleted")
+		print("  ✅ Save deleted")
 	
 	get_tree().reload_current_scene()
+
+func _debug_add_chaos() -> void:
+	print("🔥 ADDING CHAOS TO ALL ZONES")
+	if game_manager and game_manager.chaos_system:
+		for zone in game_manager.chaos_system.zone_chaos.keys():
+			var current = game_manager.chaos_system.zone_chaos[zone]
+			game_manager.chaos_system.zone_chaos[zone] = min(100.0, current + 20.0)
+			print("  %s: %.0f%% -> %.0f%%" % [zone, current, game_manager.chaos_system.zone_chaos[zone]])
+
+func _debug_clear_chaos() -> void:
+	print("✨ CLEARING CHAOS FROM ALL ZONES")
+	if game_manager and game_manager.chaos_system:
+		game_manager.chaos_system.reset()
 
 func _show_upgrade_panel() -> void:
 	if upgrade_panel and upgrade_panel.has_method("show_panel"):
