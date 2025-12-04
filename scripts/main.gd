@@ -94,6 +94,9 @@ func _create_chaos_bar() -> void:
 	if chaos_bar.has_method("setup"):
 		chaos_bar.setup(game_manager)
 
+# Add this to your _initialize_rapid_response() function in main.gd
+# After creating the map_ui and setting it up
+
 func _initialize_rapid_response() -> void:
 	rapid_manager = RapidResponseManager.new(game_manager)
 	rapid_manager.name = "RapidResponseManager"
@@ -107,7 +110,6 @@ func _initialize_rapid_response() -> void:
 	map_ui = Control.new()
 	map_ui.name = "MapMissionUI"
 	map_ui.set_script(preload("res://scripts/map_mission_ui.gd"))
-	# Map takes up the remaining vertical space
 	map_ui.size_flags_vertical = Control.SIZE_EXPAND_FILL 
 	content_container.add_child(map_ui)
 	
@@ -115,7 +117,6 @@ func _initialize_rapid_response() -> void:
 	mission_results_panel = Control.new()
 	mission_results_panel.name = "MissionResultsPanel"
 	mission_results_panel.set_script(preload("res://scripts/mission_results_panel.gd"))
-	# Panel has a fixed height, allowing the map to fill the rest
 	mission_results_panel.custom_minimum_size = Vector2(0, 150)
 	content_container.add_child(mission_results_panel)
 	
@@ -127,7 +128,39 @@ func _initialize_rapid_response() -> void:
 	if mission_results_panel.has_method("setup"):
 		mission_results_panel.setup(game_manager)
 		
-	game_manager.mission_completed.connect(mission_results_panel._on_mission_completed) 
+	game_manager.mission_completed.connect(mission_results_panel._on_mission_completed)
+	
+	# NEW: Connect chaos display to map centering
+	# Find the chaos display in the scene (you'll need to get a reference to it)
+	# If it's in the header or somewhere else in your UI:
+	var chaos_display = find_chaos_display_in_tree()
+	if chaos_display and chaos_display.has_signal("zone_clicked"):
+		chaos_display.zone_clicked.connect(_on_chaos_zone_clicked)
+
+# NEW: Handler for chaos display zone clicks
+func _on_chaos_zone_clicked(zone_id: String) -> void:
+	if map_ui and map_ui.has_method("_center_on_zone"):
+		map_ui._center_on_zone(zone_id)
+
+# NEW: Helper to find the chaos display in your scene tree
+func find_chaos_display_in_tree() -> Node:
+	# Adjust this path to match where your chaos display actually is
+	# For example, if it's in the header:
+	# return $MainMargin/MainLayout/HeaderPanel/ChaosDisplay
+	
+	# Or search recursively:
+	return _find_node_by_script(self, "res://scripts/chaos_display.gd")
+
+func _find_node_by_script(node: Node, script_path: String) -> Node:
+	if node.get_script() and node.get_script().resource_path == script_path:
+		return node
+	
+	for child in node.get_children():
+		var result = _find_node_by_script(child, script_path)
+		if result:
+			return result
+	
+	return null 
 
 func _setup_upgrade_panel() -> void:
 	call_deferred("_load_upgrade_panel")
