@@ -79,23 +79,43 @@ func _initialize_save_manager() -> void:
 
 func _create_chaos_bar() -> void:
 	"""Create and add the chaos level bar to the UI"""
+	print("========================================")
+	print("🔧 CREATING CHAOS BAR")
+	
 	# Create chaos bar - use PanelContainer since that's what the script inherits from
 	chaos_bar = PanelContainer.new()
 	chaos_bar.name = "ChaosLevelBar"
 	chaos_bar.set_script(preload("res://scripts/chaos_level_bar.gd"))
 	
+	print("   Chaos bar created: %s" % chaos_bar)
+	print("   Has zone_clicked signal: %s" % chaos_bar.has_signal("zone_clicked"))
+	
 	# Add to content container (before other content)
 	content_container.add_child(chaos_bar)
 	content_container.move_child(chaos_bar, 0)  # Move to top
+	
+	print("   Added to content_container")
 	
 	# Setup after game manager is ready
 	await get_tree().process_frame
 	
 	if chaos_bar.has_method("setup"):
+		print("   Calling setup()...")
 		chaos_bar.setup(game_manager)
-
-# Add this to your _initialize_rapid_response() function in main.gd
-# After creating the map_ui and setting it up
+	
+	# Connect zone click signal
+	if chaos_bar.has_signal("zone_clicked"):
+		print("   Connecting zone_clicked signal...")
+		chaos_bar.zone_clicked.connect(_on_chaos_zone_clicked)
+		print("   ✅ Signal connected!")
+		
+		# Test if signal list shows connection
+		var connections = chaos_bar.get_signal_connection_list("zone_clicked")
+		print("   Signal connections: %s" % connections.size())
+	else:
+		print("   ❌ ERROR: zone_clicked signal not found!")
+	
+	print("========================================")
 
 func _initialize_rapid_response() -> void:
 	rapid_manager = RapidResponseManager.new(game_manager)
@@ -137,10 +157,31 @@ func _initialize_rapid_response() -> void:
 	if chaos_display and chaos_display.has_signal("zone_clicked"):
 		chaos_display.zone_clicked.connect(_on_chaos_zone_clicked)
 
-# NEW: Handler for chaos display zone clicks
 func _on_chaos_zone_clicked(zone_id: String) -> void:
-	if map_ui and map_ui.has_method("_center_on_zone"):
-		map_ui._center_on_zone(zone_id)
+	print("========================================")
+	print("🎯 MAIN: Received zone click signal!")
+	print("   Zone ID: %s" % zone_id)
+	print("   map_ui exists: %s" % (map_ui != null))
+	print("   map_ui is valid: %s" % is_instance_valid(map_ui))
+	
+	if map_ui:
+		print("   map_ui name: %s" % map_ui.name)
+		print("   Has _center_on_zone method: %s" % map_ui.has_method("_center_on_zone"))
+		
+		if map_ui.has_method("_center_on_zone"):
+			print("   📍 Calling _center_on_zone(%s)..." % zone_id)
+			map_ui._center_on_zone(zone_id)
+			print("   ✅ Method called!")
+		else:
+			print("   ❌ ERROR: _center_on_zone method not found!")
+			print("   Available methods:")
+			for method in map_ui.get_method_list():
+				if not method.name.begins_with("_"):
+					print("      - %s" % method.name)
+	else:
+		print("   ❌ ERROR: map_ui is null!")
+	
+	print("========================================")
 
 # NEW: Helper to find the chaos display in your scene tree
 func find_chaos_display_in_tree() -> Node:

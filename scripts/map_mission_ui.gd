@@ -300,7 +300,7 @@ func _create_zone_labels() -> void:
 		
 		var chaos := Label.new()
 		chaos.name = "ChaosLabel"
-		#chaos.text = "🔥 0%"
+		chaos.text = "🔥 0%"
 		chaos.add_theme_font_size_override("font_size", 12)
 		chaos.add_theme_color_override("font_color", zone_data.color)
 		chaos.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
